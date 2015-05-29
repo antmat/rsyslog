@@ -1,0 +1,15 @@
+/var/log/rsyslog/rsyslog.log
+/var/log/rsyslog/debug.log
+{
+    weekly
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    dateext
+    dateformat -%Y%m%d
+    create 0644 syslog adm
+    postrotate
+        reload rsyslog-standalone >/dev/null 2>&1
+    endscript
+}
