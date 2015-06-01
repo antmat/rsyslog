@@ -1,3 +1,9 @@
+rsyslog (8.10.0-3standalone) precise; urgency=low
+
+  * Apply patch
+
+ -- Anton Matveenko <antmat@yandex-team.ru>  Fri, 29 May 2015 15:52:02 +4000
+
 rsyslog (8.10.0-2standalone) precise; urgency=low
 
   * Fix memleak in mmjsonparse.
