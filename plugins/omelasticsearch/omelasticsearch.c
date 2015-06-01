@@ -89,6 +89,8 @@ typedef struct _instanceData {
 	sbool dynParent;
 	sbool dynBulkId;
 	sbool bulkmode;
+	sbool reuseconn;
+	long  reqtimeout;
 	sbool asyncRepl;
         sbool useHttps;
 } instanceData;
@@ -122,6 +124,8 @@ static struct cnfparamdescr actpdescr[] = {
 	{ "dynsearchtype", eCmdHdlrBinary, 0 },
 	{ "dynparent", eCmdHdlrBinary, 0 },
 	{ "bulkmode", eCmdHdlrBinary, 0 },
+	{ "reuseconn", eCmdHdlrBinary, 0 },
+	{ "reqtimeout", eCmdHdlrInt, 0 },
 	{ "asyncrepl", eCmdHdlrBinary, 0 },
         { "usehttps", eCmdHdlrBinary, 0 },
 	{ "timeout", eCmdHdlrGetWord, 0 },
@@ -219,6 +223,8 @@ CODESTARTdbgPrintInstInfo
 	dbgprintf("\tasync replication=%d\n", pData->asyncRepl);
         dbgprintf("\tuse https=%d\n", pData->useHttps);
 	dbgprintf("\tbulkmode=%d\n", pData->bulkmode);
+	dbgprintf("\treuseconn=%d\n", pData->reuseconn);
+	dbgprintf("\treqtimeout=%d\n", pData->reqtimeout);
 	dbgprintf("\terrorfile='%s'\n", pData->errorFile == NULL ?
 		(uchar*)"(not configured)" : pData->errorFile);
 	dbgprintf("\terroronly=%d\n", pData->errorOnly);
@@ -302,7 +308,9 @@ finalize_it:
 BEGINtryResume
 CODESTARTtryResume
 	DBGPRINTF("omelasticsearch: tryResume called\n");
-	iRet = checkConn(pWrkrData);
+	if(pWrkrData->pData->reuseconn) {
+		iRet = checkConn(pWrkrData);
+	}
 ENDtryResume
 
 
@@ -1032,6 +1040,7 @@ curlPost(wrkrInstanceData_t *pWrkrData, uchar *message, int msglen, uchar **tpls
 		case CURLE_COULDNT_RESOLVE_HOST:
 		case CURLE_COULDNT_RESOLVE_PROXY:
 		case CURLE_COULDNT_CONNECT:
+		case CURLE_OPERATION_TIMEDOUT:
 		case CURLE_WRITE_ERROR:
 			STATSCOUNTER_INC(indexHTTPReqFail, mutIndexHTTPReqFail);
 			indexHTTPFail += nmsgs;
@@ -1137,6 +1146,13 @@ curlSetup(wrkrInstanceData_t *pWrkrData, instanceData *pData)
 	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, curlResult);
 	curl_easy_setopt(handle, CURLOPT_POST, 1);
 
+	if(!pData->reuseconn) {
+		curl_easy_setopt(handle, CURLOPT_FORBID_REUSE, 1);
+		curl_easy_setopt(handle, CURLOPT_FRESH_CONNECT, 1);
+	}
+
+	curl_easy_setopt(handle, CURLOPT_TIMEOUT, pData->reqtimeout);
+
 	pWrkrData->curlHandle = handle;
 	pWrkrData->postHeader = header;
 
@@ -1172,6 +1188,8 @@ setInstParamDefaults(instanceData *pData)
 	pData->asyncRepl = 0;
         pData->useHttps = 0;
 	pData->bulkmode = 0;
+	pData->reuseconn = 1;
+	pData->reqtimeout = 0L;
 	pData->tplName = NULL;
 	pData->errorFile = NULL;
 	pData->errorOnly=0;
@@ -1223,6 +1241,10 @@ CODESTARTnewActInst
 			pData->dynParent = pvals[i].val.d.n;
 		} else if(!strcmp(actpblk.descr[i].name, "bulkmode")) {
 			pData->bulkmode = pvals[i].val.d.n;
+		} else if(!strcmp(actpblk.descr[i].name, "reuseconn")) {
+			pData->reuseconn = pvals[i].val.d.n;
+		} else if(!strcmp(actpblk.descr[i].name, "reqtimeout")) {
+			pData->reqtimeout = (long) pvals[i].val.d.n, NULL;
 		} else if(!strcmp(actpblk.descr[i].name, "timeout")) {
 			pData->timeout = (uchar*)es_str2cstr(pvals[i].val.d.estr, NULL);
 		} else if(!strcmp(actpblk.descr[i].name, "asyncrepl")) {
