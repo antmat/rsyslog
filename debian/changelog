@@ -1,3 +1,9 @@
+rsyslog (8.10.0-4standalone) precise; urgency=low
+
+  * Applied patches
+
+ -- Anton Matveenko <antmat@yandex-team.ru>  Mon, 1 Jun 2015 15:00:00 +4000
+
 rsyslog (8.10.0-3standalone) precise; urgency=low
 
   * Apply patch
