@@ -3,3 +3,4 @@
 /etc/apparmor.d/disable/
 /etc/apparmor.d/local/
 /var/spool/rsyslog/
+/var/log/rsyslog/
