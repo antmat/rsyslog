@@ -1,3 +1,9 @@
+rsyslog (8.10.0-6standalone) precise; urgency=low
+
+  * Fixed default config to prevent crash in imudp module.
+
+ -- Anton Matveenko <antmat@yandex-team.ru>  Mon, 13 JuL 2015 21:10:00 +4000
+
 rsyslog (8.10.0-5standalone) precise; urgency=low
 
   * Added /var/log/rsyslog to package
